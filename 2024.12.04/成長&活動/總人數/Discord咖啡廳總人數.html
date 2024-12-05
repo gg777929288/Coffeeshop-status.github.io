@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Total Membership Over Time</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            overflow: hidden;
+        }
+        #chartContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="chartContainer">
+        <canvas id="membershipChart"></canvas>
+    </div>
+    <script>
+        const csvData = [
+            { date: '2024-11-29', total: 3366 },
+            { date: '2024-11-30', total: 3368 },
+            { date: '2024-12-01', total: 3370 },
+            { date: '2024-12-02', total: 3375 }
+        ];
+
+        const data = csvData.map(row => ({
+            x: new Date(row.date),
+            y: row.total
+        }));
+
+        const ctx = document.getElementById('membershipChart');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: '總會員數',
+                    data: data,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#4CAF50'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '會員成長趨勢',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'MM/dd'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '日期'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '會員數'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

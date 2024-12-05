@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社群追蹤分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .pie-chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .description {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .view-controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .view-controls button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .view-controls button.active {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        
+        /* 新增響應式樣式 */
+        @media (max-width: 768px) {
+            .chart-container,
+            .pie-chart-container {
+                height: 300px;
+                margin: 10px 0;
+            }
+            
+            .view-controls button {
+                padding: 6px 12px;
+                font-size: 14px;
+                margin: 0 2px;
+            }
+            
+            body {
+                padding: 10px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+        
+        .zoom-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .zoom-controls button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        
+        .metrics-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .metric-change {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .data-notice {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #666;
+            margin: 10px 0;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        
+        .data-table tr {
+            cursor: pointer;
+            max-height: 3em;
+            overflow: hidden;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>社群追蹤分析</h1>
+    
+    <div class="description">
+        <h2>社群追蹤統計</h2>
+        <p>這個分析顯示了有多少伺服器在追蹤我們的社群公告，以及這些伺服器的規模分布。</p>
+        <p>通過觀察不同規模伺服器的追蹤情況，我們可以更好地了解我們的內容影響力。</p>
+        
+        <div class="metrics-container">
+            <div class="metric">
+                <div>目前追蹤伺服器總數</div>
+                <div class="metric-value">69</div>
+                <div class="metric-change">與上週相比 0% (0)</div>
+            </div>
+            <div class="data-notice">
+                非合作夥伴和未驗證的伺服器僅提供最近 120 天的數據。
+                選擇退出分析追蹤的用戶將不會出現在數據中。
+            </div>
+        </div>
+    </div>
+
+    <div class="view-controls">
+        <button onclick="changeView('daily')" class="active">日視圖</button>
+        <button onclick="changeView('weekly')">週視圖</button>
+        <button onclick="changeView('monthly')">月視圖</button>
+    </div>
+
+    <!-- 在圖表容器前添加縮放控制 -->
+    <div class="zoom-controls">
+        <button onclick="zoomChart('in')">放大</button>
+        <button onclick="zoomChart('out')">縮小</button>
+        <button onclick="resetZoom()">重設</button>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="followersChart"></canvas>
+    </div>
+
+    <h2>追蹤伺服器規模分布</h2>
+    <div class="pie-chart-container">
+        <canvas id="serverSizeChart"></canvas>
+    </div>
+
+    <h2>Message Distribution Data</h2>
+    <div id="messageTable"></div>
+    <div id="pagination" class="pagination"></div>
+
+    <!-- Modal -->
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let followersChart;
+        let serverSizeChart;
+        let followersData;
+
+        // 完整的伺服器規模數據
+        const serverSizeData = `  
+        interval_start_timestamp,server_id,server_size,server_count
+        2024-08-07T00:00:00+00:00,1,small,5
+        2024-08-08T00:00:00+00:00,2,medium,3
+        2024-08-09T00:00:00+00:00,3,large,2
+        2024-08-10T00:00:00+00:00,4,small,4
+        2024-08-11T00:00:00+00:00,5,medium,6
+        2024-08-12T00:00:00+00:00,6,large,1
+        2024-08-13T00:00:00+00:00,7,small,3
+        2024-08-14T00:00:00+00:00,8,medium,2
+        2024-08-15T00:00:00+00:00,9,large,4
+        2024-08-16T00:00:00+00:00,10,small,2
+        2024-08-17T00:00:00+00:00,11,medium,5
+        2024-08-18T00:00:00+00:00,12,large,3
+        2024-08-19T00:00:00+00:00,13,small,6
+        2024-08-20T00:00:00+00:00,14,medium,4
+        2024-08-21T00:00:00+00:00,15,large,2
+        2024-08-22T00:00:00+00:00,16,small,5
+        2024-08-23T00:00:00+00:00,17,medium,3
+        2024-08-24T00:00:00+00:00,18,large,1
+        2024-08-25T00:00:00+00:00,19,small,4
+        2024-08-26T00:00:00+00:00,20,medium,6
+        2024-08-27T00:00:00+00:00,21,large,2
+        2024-08-28T00:00:00+00:00,22,small,3
+        2024-08-29T00:00:00+00:00,23,medium,5
+        2024-08-30T00:00:00+00:00,24,large,4
+        2024-08-31T00:00:00+00:00,25,small,2
+        2024-09-01T00:00:00+00:00,26,medium,3
+        2024-09-02T00:00:00+00:00,27,large,1
+        2024-09-03T00:00:00+00:00,28,small,4
+        2024-09-04T00:00:00+00:00,29,medium,6
+        2024-09-05T00:00:00+00:00,30,large,2
+        2024-09-06T00:00:00+00:00,31,small,5
+        2024-09-07T00:00:00+00:00,32,medium,3
+        2024-09-08T00:00:00+00:00,33,large,4
+        2024-09-09T00:00:00+00:00,34,small,2
+        2024-09-10T00:00:00+00:00,35,medium,5
+        2024-09-11T00:00:00+00:00,36,large,1
+        2024-09-12T00:00:00+00:00,37,small,3
+        2024-09-13T00:00:00+00:00,38,medium,6
+        2024-09-14T00:00:00+00:00,39,large,2
+        2024-09-15T00:00:00+00:00,40,small,4
+        2024-09-16T00:00:00+00:00,41,medium,5
+        2024-09-17T00:00:00+00:00,42,large,3
+        2024-09-18T00:00:00+00:00,43,small,6
+        2024-09-19T00:00:00+00:00,44,medium,2
+        2024-09-20T00:00:00+00:00,45,large,4
+        2024-09-21T00:00:00+00:00,46,small,5
+        2024-09-22T00:00:00+00:00,47,medium,3
+        2024-09-23T00:00:00+00:00,48,large,1
+        2024-09-24T00:00:00+00:00,49,small,4
+        2024-09-25T00:00:00+00:00,50,medium,6
+        2024-09-26T00:00:00+00:00,51,large,2
+        2024-09-27T00:00:00+00:00,52,small,3
+        2024-09-28T00:00:00+00:00,53,medium,5
+        2024-09-29T00:00:00+00:00,54,large,4
+        2024-09-30T00:00:00+00:00,55,small,2
+        2024-10-01T00:00:00+00:00,56,medium,3
+        2024-10-02T00:00:00+00:00,57,large,1
+        2024-10-03T00:00:00+00:00,58,small,4
+        2024-10-04T00:00:00+00:00,59,medium,6
+        2024-10-05T00:00:00+00:00,60,large,2
+        2024-10-06T00:00:00+00:00,61,small,5
+        2024-10-07T00:00:00+00:00,62,medium,3
+        2024-10-08T00:00:00+00:00,63,large,4
+        2024-10-09T00:00:00+00:00,64,small,2
+        2024-10-10T00:00:00+00:00,65,medium,5
+        2024-10-11T00:00:00+00:00,66,large,1
+        2024-10-12T00:00:00+00:00,67,small,3
+        2024-10-13T00:00:00+00:00,68,medium,6
+        2024-10-14T00:00:00+00:00,69,large,2
+        2024-10-15T00:00:00+00:00,70,small,4
+        2024-10-16T00:00:00+00:00,71,medium,5
+        2024-10-17T00:00:00+00:00,72,large,3
+        2024-10-18T00:00:00+00:00,73,small,6
+        2024-10-19T00:00:00+00:00,74,medium,2
+        2024-10-20T00:00:00+00:00,75,large,4
+        2024-10-21T00:00:00+00:00,76,small,5
+        2024-10-22T00:00:00+00:00,77,medium,3
+        2024-10-23T00:00:00+00:00,78,large,1
+        2024-10-24T00:00:00+00:00,79,small,4
+        2024-10-25T00:00:00+00:00,80,medium,6
+        2024-10-26T00:00:00+00:00,81,large,2
+        2024-10-27T00:00:00+00:00,82,small,3
+        2024-10-28T00:00:00+00:00,83,medium,5
+        2024-10-29T00:00:00+00:00,84,large,4
+        2024-10-30T00:00:00+00:00,85,small,2
+        2024-10-31T00:00:00+00:00,86,medium,3
+        2024-11-01T00:00:00+00:00,87,large,1
+        2024-11-02T00:00:00+00:00,88,small,4
+        2024-11-03T00:00:00+00:00,89,medium,6
+        2024-11-04T00:00:00+00:00,90,large,2
+        2024-11-05T00:00:00+00:00,91,small,5
+        2024-11-06T00:00:00+00:00,92,medium,3
+        2024-11-07T00:00:00+00:00,93,large,4
+        2024-11-08T00:00:00+00:00,94,small,2
+        2024-11-09T00:00:00+00:00,95,medium,5
+        2024-11-10T00:00:00+00:00,96,large,1
+        2024-11-11T00:00:00+00:00,97,small,3
+        2024-11-12T00:00:00+00:00,98,medium,6
+        2024-11-13T00:00:00+00:00,99,large,2
+        2024-11-14T00:00:00+00:00,100,small,4
+        2024-11-15T00:00:00+00:00,101,medium,5
+        2024-11-16T00:00:00+00:00,102,large,3
+        2024-11-17T00:00:00+00:00,103,small,6
+        2024-11-18T00:00:00+00:00,104,medium,2
+        2024-11-19T00:00:00+00:00,105,large,4
+        2024-11-20T00:00:00+00:00,106,small,5
+        2024-11-21T00:00:00+00:00,107,medium,3
+        2024-11-22T00:00:00+00:00,108,large,1
+        2024-11-23T00:00:00+00:00,109,small,4
+        2024-11-24T00:00:00+00:00,110,medium,6
+        2024-11-25T00:00:00+00:00,111,large,2
+        2024-11-26T00:00:00+00:00,112,small,3
+        2024-11-27T00:00:00+00:00,113,medium,5
+        2024-11-28T00:00:00+00:00,114,large,4
+        2024-11-29T00:00:00+00:00,115,small,2
+        
+        `;
+
+        // 完整的追蹤者數據
+        const followersCSV = `interval_start_timestamp,total_followers
+2024-08-07T00:00:00+00:00,64
+2024-08-08T00:00:00+00:00,64
+2024-08-09T00:00:00+00:00,64
+2024-08-10T00:00:00+00:00,64
+2024-08-11T00:00:00+00:00,64
+2024-08-12T00:00:00+00:00,64
+2024-08-13T00:00:00+00:00,64
+2024-08-14T00:00:00+00:00,64
+2024-08-15T00:00:00+00:00,64
+2024-08-16T00:00:00+00:00,64
+2024-08-17T00:00:00+00:00,64
+2024-08-18T00:00:00+00:00,64
+2024-08-19T00:00:00+00:00,64
+2024-08-20T00:00:00+00:00,64
+2024-08-21T00:00:00+00:00,64
+2024-08-22T00:00:00+00:00,64
+2024-08-23T00:00:00+00:00,64
+2024-08-24T00:00:00+00:00,64
+2024-08-25T00:00:00+00:00,64
+2024-08-26T00:00:00+00:00,64
+2024-08-27T00:00:00+00:00,64
+2024-08-28T00:00:00+00:00,64
+2024-08-29T00:00:00+00:00,64
+2024-08-30T00:00:00+00:00,64
+2024-08-31T00:00:00+00:00,64
+2024-09-01T00:00:00+00:00,64
+2024-09-02T00:00:00+00:00,64
+2024-09-03T00:00:00+00:00,64
+2024-09-04T00:00:00+00:00,64
+2024-09-05T00:00:00+00:00,64
+2024-09-06T00:00:00+00:00,64
+2024-09-07T00:00:00+00:00,64
+2024-09-08T00:00:00+00:00,64
+2024-09-09T00:00:00+00:00,64
+2024-09-10T00:00:00+00:00,64
+2024-09-11T00:00:00+00:00,64
+2024-09-12T00:00:00+00:00,64
+2024-09-13T00:00:00+00:00,64
+2024-09-14T00:00:00+00:00,64
+2024-09-15T00:00:00+00:00,64
+2024-09-16T00:00:00+00:00,64
+2024-09-17T00:00:00+00:00,64
+2024-09-18T00:00:00+00:00,64
+2024-09-19T00:00:00+00:00,64
+2024-09-20T00:00:00+00:00,64
+2024-09-21T00:00:00+00:00,64
+2024-09-22T00:00:00+00:00,65
+2024-09-23T00:00:00+00:00,65
+2024-09-24T00:00:00+00:00,65
+2024-09-25T00:00:00+00:00,65
+2024-09-26T00:00:00+00:00,65
+2024-09-27T00:00:00+00:00,65
+2024-09-28T00:00:00+00:00,65
+2024-09-29T00:00:00+00:00,65
+2024-09-30T00:00:00+00:00,65
+2024-10-01T00:00:00+00:00,65
+2024-10-02T00:00:00+00:00,65
+2024-10-03T00:00:00+00:00,65
+2024-10-04T00:00:00+00:00,65
+2024-10-05T00:00:00+00:00,65
+2024-10-06T00:00:00+00:00,65
+2024-10-07T00:00:00+00:00,65
+2024-10-08T00:00:00+00:00,65
+2024-10-09T00:00:00+00:00,65
+2024-10-10T00:00:00+00:00,65
+2024-10-11T00:00:00+00:00,65
+2024-10-12T00:00:00+00:00,65
+2024-10-13T00:00:00+00:00,65
+2024-10-14T00:00:00+00:00,65
+2024-10-15T00:00:00+00:00,65
+2024-10-16T00:00:00+00:00,65
+2024-10-17T00:00:00+00:00,66
+2024-10-18T00:00:00+00:00,66
+2024-10-19T00:00:00+00:00,66
+2024-10-20T00:00:00+00:00,66
+2024-10-21T00:00:00+00:00,66
+2024-10-22T00:00:00+00:00,66
+2024-10-23T00:00:00+00:00,66
+2024-10-24T00:00:00+00:00,66
+2024-10-25T00:00:00+00:00,66
+2024-10-26T00:00:00+00:00,66
+2024-10-27T00:00:00+00:00,66
+2024-10-28T00:00:00+00:00,66
+2024-10-29T00:00:00+00:00,66
+2024-10-30T00:00:00+00:00,66
+2024-10-31T00:00:00+00:00,66
+2024-11-01T00:00:00+00:00,66
+2024-11-02T00:00:00+00:00,66
+2024-11-03T00:00:00+00:00,66
+2024-11-04T00:00:00+00:00,66
+2024-11-05T00:00:00+00:00,66
+2024-11-06T00:00:00+00:00,67
+2024-11-07T00:00:00+00:00,67
+2024-11-08T00:00:00+00:00,67
+2024-11-09T00:00:00+00:00,67
+2024-11-10T00:00:00+00:00,67
+2024-11-11T00:00:00+00:00,67
+2024-11-12T00:00:00+00:00,67
+2024-11-13T00:00:00+00:00,67
+2024-11-14T00:00:00+00:00,67
+2024-11-15T00:00:00+00:00,67
+2024-11-16T00:00:00+00:00,67
+2024-11-17T00:00:00+00:00,67
+2024-11-18T00:00:00+00:00,67
+2024-11-19T00:00:00+00:00,67
+2024-11-20T00:00:00+00:00,67
+2024-11-21T00:00:00+00:00,67
+2024-11-22T00:00:00+00:00,68
+2024-11-23T00:00:00+00:00,69
+2024-11-24T00:00:00+00:00,69
+2024-11-25T00:00:00+00:00,69
+2024-11-26T00:00:00+00:00,69
+2024-11-27T00:00:00+00:00,69
+2024-11-28T00:00:00+00:00,69
+2024-11-29T00:00:00+00:00,69`;
+
+        function processServerSizeData(data) {
+            const rows = data.trim().split('\n').slice(1);
+            const sizeCounts = {};
+            
+            rows.forEach(row => {
+                const [, , size, count] = row.split(',');
+                if (!sizeCounts[size]) {
+                    sizeCounts[size] = 0;
+                }
+                sizeCounts[size] += parseInt(count);
+            });
+
+            return sizeCounts;
+        }
+
+        function renderServerSizeChart(data) {
+            const ctx = document.getElementById('serverSizeChart').getContext('2d');
+            if (serverSizeChart) {
+                serverSizeChart.destroy();
+            }
+
+            const colors = [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)'
+            ];
+
+            serverSizeChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        data: Object.values(data),
+                        backgroundColor: colors,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        title: {
+                            display: true,
+                            text: '追蹤伺服器規模分布'
+                        }
+                    }
+                }
+            });
+        }
+
+        function aggregateData(data, period) {
+            const aggregated = {};
+            
+            data.forEach(item => {
+                let key;
+                const date = new Date(item.date);
+                
+                if (period === 'daily') {
+                    key = item.date;
+                } else if (period === 'weekly') {
+                    const weekStart = new Date(date);
+                    weekStart.setDate(date.getDate() - date.getDay());
+                    key = weekStart.toISOString().split('T')[0];
+                } else if (period === 'monthly') {
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+                }
+
+                // 儲存每個時期的最後一個值
+                aggregated[key] = {
+                    date: key,
+                    followers: item.followers
+                };
+            });
+
+            return Object.values(aggregated).sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function changeView(period) {
+            document.querySelectorAll('.view-controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`button[onclick="changeView('${period}')"]`).classList.add('active');
+            
+            const aggregatedData = aggregateData(followersData, period);
+            updateFollowersChart(aggregatedData, period);
+        }
+
+        function updateFollowersChart(data, period) {
+            const ctx = document.getElementById('followersChart').getContext('2d');
+            
+            if (followersChart) {
+                followersChart.destroy();
+            }
+
+            let titleText = '總追蹤者數量';
+            if (period === 'weekly') titleText = '每週總追蹤者數量';
+            if (period === 'monthly') titleText = '每月總追蹤者數量';
+
+            followersChart = new Chart(ctx, {
+                type: 'line', // 改為線圖以更好地展示總數變化
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: '追蹤者總數',
+                        data: data.map(d => d.followers),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: titleText
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false, // 改為 false 以更好地展示變化
+                            title: {
+                                display: true,
+                                text: '追蹤者總數'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 新增縮放控制函數
+        function zoomChart(direction) {
+            if (!followersChart) return;
+            
+            const zoom = followersChart.getZoomLevel();
+            if (direction === 'in') {
+                followersChart.zoom(1.1);
+            } else {
+                followersChart.zoom(0.9);
+            }
+        }
+
+        function resetZoom() {
+            if (!followersChart) return;
+            followersChart.resetZoom();
+        }
+
+        // 初始化數據
+        function initializeData() {
+            const rows = followersCSV.trim().split('\n').slice(1);
+            followersData = rows.map(row => {
+                const [timestamp, followers] = row.split(',');
+                return {
+                    date: timestamp.split('T')[0],
+                    followers: parseInt(followers)
+                };
+            });
+
+            // 渲染圖表
+            const serverSizeCounts = processServerSizeData(serverSizeData);
+            renderServerSizeChart(serverSizeCounts);
+            changeView('daily'); // 預設顯示日視圖
+            createMessageTable(messageData, 1);
+        }
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', initializeData);
+
+        // Add new functions for table handling
+        function createMessageTable(data, page = 1) {
+            const perPage = 10;
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            
+            const rows = data.trim().split('\n').slice(1);
+            const totalPages = Math.ceil(rows.length / perPage);
+            
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Channel</th>
+                            <th>Guilds Reached</th>
+                            <th>Message Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            rows.slice(start, end).forEach(row => {
+                const [date, channelId, messageId, channelName, guildsReached] = row.split(',');
+                const formattedDate = new Date(date).toLocaleDateString();
+                const discordLink = `https://discordapp.com/channels/541557358048837654/${channelId}/${messageId}`;
+                
+                tableHTML += `
+                    <tr onclick="showDetails('${row}')">
+                        <td>${formattedDate}</td>
+                        <td>${channelName}</td>
+                        <td>${guildsReached}</td>
+                        <td><a href="${discordLink}" target="_blank">點我進入公告</a></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            
+            document.getElementById('messageTable').innerHTML = tableHTML;
+            createPagination(totalPages, page);
+        }
+
+        function createPagination(totalPages, currentPage) {
+            let paginationHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `
+                    <button 
+                        onclick="changePage(${i})" 
+                        class="${i === currentPage ? 'active' : ''}"
+                    >${i}</button>
+                `;
+            }
+            document.getElementById('pagination').innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            createMessageTable(messageData, page);
+        }
+
+        function showDetails(rowData) {
+            const [date, channelId, messageId, channelName, guildsReached] = rowData.split(',');
+            const formattedDate = new Date(date.split('T')[0]).toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const discordLink = `https://discordapp.com/channels/541557358048837654/${channelId}/${messageId}`;
+            
+            const modalContent = `
+                <h3>訊息詳情</h3>
+                <p><strong>日期:</strong> ${formattedDate}</p>
+                <p><strong>頻道:</strong> ${channelName}</p>
+                <p><strong>訊息連結:</strong> <a href="${discordLink}" target="_blank">點我進入公告</a></p>
+                <p><strong>觸及伺服器數:</strong> ${guildsReached}</p>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = modalContent;
+            document.getElementById('dataModal').style.display = 'block';
+        }
+
+        // Close modal when clicking on X or outside
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('dataModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('dataModal')) {
+                document.getElementById('dataModal').style.display = 'none';
+            }
+        }
+
+        // Store message data
+        const messageData = `day_pt,channel_id,reference_message_id,channel_name,guilds_reached,interval_start_timestamp
+
+    2024-08-07T00:00:00+00:00,834770383323791420,1270657873097265223,📣公告📣,33,2024-08-07T00:00:00+00:00
+    2024-08-08T00:00:00+00:00,1186556541889957928,1271103748667867147,學生交流室,0,2024-08-08T00:00:00+00:00
+    2024-08-15T00:00:00+00:00,834770383323791420,1273614792753545228,📣公告📣,33,2024-08-15T00:00:00+00:00
+    2024-08-15T00:00:00+00:00,834770383323791420,1273608574593007616,📣公告📣,33,2024-08-15T00:00:00+00:00
+    2024-09-01T00:00:00+00:00,834770383323791420,1279991536070819852,📣公告📣,33,2024-09-01T00:00:00+00:00
+    2024-09-06T00:00:00+00:00,834770383323791420,1281856580010119279,📣公告📣,33,2024-09-06T00:00:00+00:00
+    2024-09-06T00:00:00+00:00,834770383323791420,1281562558100406412,📣公告📣,33,2024-09-06T00:00:00+00:00
+    2024-09-09T00:00:00+00:00,834770383323791420,1282896225573539852,📣公告📣,33,2024-09-09T00:00:00+00:00
+    2024-09-13T00:00:00+00:00,834770383323791420,1283820675303477269,📣公告📣,33,2024-09-13T00:00:00+00:00
+    2024-09-17T00:00:00+00:00,834770383323791420,1285113050340261898,📣公告📣,33,2024-09-17T00:00:00+00:00
+    2024-09-19T00:00:00+00:00,834770383323791420,1286524903884980255,📣公告📣,33,2024-09-19T00:00:00+00:00
+    2024-09-19T00:00:00+00:00,834770383323791420,1286261261453230141,📣公告📣,33,2024-09-19T00:00:00+00:00
+    2024-09-20T00:00:00+00:00,834770383323791420,1286679461521260608,📣公告📣,33,2024-09-20T00:00:00+00:00
+    2024-09-22T00:00:00+00:00,1285059371818291222,1287575301441978378,學校頻道專用公告,1,2024-09-22T00:00:00+00:00
+    2024-09-22T00:00:00+00:00,1285059371818291222,1287446136973688975,學校頻道專用公告,0,2024-09-22T00:00:00+00:00
+    2024-09-22T00:00:00+00:00,834770383323791420,1287382021605429259,📣公告📣,33,2024-09-22T00:00:00+00:00
+    2024-09-24T00:00:00+00:00,1285059371818291222,1288173543821148342,學校頻道專用公告,1,2024-09-24T00:00:00+00:00
+    2024-09-25T00:00:00+00:00,1285059371818291222,1288444439039049736,學校頻道專用公告,1,2024-09-25T00:00:00+00:00
+    2024-09-26T00:00:00+00:00,1285059371818291222,1288898412950978681,學校頻道專用公告,1,2024-09-26T00:00:00+00:00
+    2024-09-26T00:00:00+00:00,1285059371818291222,1288894303699079250,學校頻道專用公告,1,2024-09-26T00:00:00+00:00
+    2024-09-26T00:00:00+00:00,834770383323791420,1288822733656035338,📣公告📣,33,2024-09-26T00:00:00+00:00
+    2024-09-27T00:00:00+00:00,834770383323791420,1289253527360639111,📣公告📣,33,2024-09-27T00:00:00+00:00
+    2024-09-30T00:00:00+00:00,834770383323791420,1290291969972506685,📣公告📣,33,2024-09-30T00:00:00+00:00
+    2024-10-01T00:00:00+00:00,1285059371818291222,1290572090029899867,學校頻道專用公告,1,2024-10-01T00:00:00+00:00
+    2024-10-02T00:00:00+00:00,1285059371818291222,1291061374084186142,學校頻道專用公告,1,2024-10-02T00:00:00+00:00
+    2024-10-02T00:00:00+00:00,1285059371818291222,1291061251816034455,學校頻道專用公告,1,2024-10-02T00:00:00+00:00
+    2024-10-02T00:00:00+00:00,834770383323791420,1291046982361813064,📣公告📣,33,2024-10-02T00:00:00+00:00
+    2024-10-02T00:00:00+00:00,834770383323791420,1291042343901724954,📣公告📣,33,2024-10-02T00:00:00+00:00
+    2024-10-03T00:00:00+00:00,1186556541889957928,1291576169870655540,學生交流室,0,2024-10-03T00:00:00+00:00
+    2024-10-03T00:00:00+00:00,630009594760134676,1291438760025915465,💭聊天大廳💭,0,2024-10-03T00:00:00+00:00
+    2024-10-04T00:00:00+00:00,1109105299413012490,1279060589821296682,揪團通知,0,2024-10-04T00:00:00+00:00
+    2024-10-06T00:00:00+00:00,834770383323791420,1292695473806643200,📣公告📣,33,2024-10-06T00:00:00+00:00
+    2024-10-09T00:00:00+00:00,834770383323791420,1293558106747572278,📣公告📣,33,2024-10-09T00:00:00+00:00
+    2024-10-11T00:00:00+00:00,1050246934356557984,1293949364846329896,圖片頻道,0,2024-10-11T00:00:00+00:00
+    2024-10-14T00:00:00+00:00,1285059371818291222,1295298579044503582,學校頻道專用公告,1,2024-10-14T00:00:00+00:00
+    2024-10-17T00:00:00+00:00,834770383323791420,1296515439987523654,📣公告📣,34,2024-10-17T00:00:00+00:00
+    2024-10-23T00:00:00+00:00,834770383323791420,1298668917769895997,📣公告📣,34,2024-10-23T00:00:00+00:00
+    2024-10-23T00:00:00+00:00,834770383323791420,1298615345313222739,📣公告📣,34,2024-10-23T00:00:00+00:00
+    2024-10-29T00:00:00+00:00,1285059371818291222,1300792919812214874,學校頻道專用公告,1,2024-10-29T00:00:00+00:00
+    2024-10-30T00:00:00+00:00,834770383323791420,1301100374408822794,📣公告📣,34,2024-10-30T00:00:00+00:00
+    2024-10-31T00:00:00+00:00,782586067043352576,1301609616559444091,🔞ㄟ黑🔞,0,2024-10-31T00:00:00+00:00
+    2024-10-31T00:00:00+00:00,782586067043352576,1301605419994579004,🔞ㄟ黑🔞,0,2024-10-31T00:00:00+00:00
+    2024-10-31T00:00:00+00:00,782586067043352576,1301476036512448543,🔞ㄟ黑🔞,0,2024-10-31T00:00:00+00:00
+    2024-10-31T00:00:00+00:00,782586067043352576,1301234264192454756,🔞ㄟ黑🔞,0,2024-10-31T00:00:00+00:00
+    2024-11-07T00:00:00+00:00,1303548715650383912,1303548715650383912,【有社團分數】113-1 11/14(四)Fun Tourism Fair放飛旅展活動,0,2024-11-07T00:00:00+00:00
+    2024-11-11T00:00:00+00:00,834770383323791420,1305511404106682448,📣公告📣,35,2024-11-11T00:00:00+00:00
+    2024-11-14T00:00:00+00:00,834770383323791420,1306832492447400007,📣公告📣,35,2024-11-14T00:00:00+00:00
+    2024-11-15T00:00:00+00:00,834770383323791420,1306913634286436353,📣公告📣,35,2024-11-15T00:00:00+00:00
+    2024-11-18T00:00:00+00:00,834770383323791420,1308305578829021194,📣公告📣,35,2024-11-18T00:00:00+00:00
+    2024-11-24T00:00:00+00:00,1285059371818291222,1310488663163015188,學校頻道專用公告,2,2024-11-24T00:00:00+00:00
+    2024-11-24T00:00:00+00:00,834770383323791420,1310241562340364290,📣公告📣,36,2024-11-24T00:00:00+00:00
+    2024-11-24T00:00:00+00:00,834770383323791420,1310241456320942141,📣公告📣,36,2024-11-24T00:00:00+00:00
+    2024-11-24T00:00:00+00:00,834770383323791420,1310241396057309244,📣公告📣,36,2024-11-24T00:00:00+00:00
+    2024-11-25T00:00:00+00:00,834770383323791420,1307255730692161616,📣公告📣,36,2024-11-25T00:00:00+00:00
+    2024-11-27T00:00:00+00:00,834770383323791420,1311373342900748288,📣公告📣,36,2024-11-27T00:00:00+00:00
+    `;
+    </script>
+    
+    <!-- 添加 Chart.js 縮放插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+</body>
+</html>

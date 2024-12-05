@@ -1,0 +1,39 @@
+
+/* ...existing global styles... */
+
+/* Added styles moved from index.html */
+.container {
+    flex-direction: column;
+}
+
+.nav-menu {
+    width: 100%;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    background: #333;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-menu a {
+    margin: 5px 10px;
+}
+
+#background-info {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.content-frame {
+    height: calc(100vh - 80px);
+}
+
+/* ...existing global styles... */

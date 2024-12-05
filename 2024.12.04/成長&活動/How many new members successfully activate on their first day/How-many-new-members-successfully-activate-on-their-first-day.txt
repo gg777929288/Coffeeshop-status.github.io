@@ -1,0 +1,5 @@
+How many new members successfully activate on their first day?
+A new member is "activated" when they understand what the community is about and why it’s a fit for them. Usually, this is reflected by them at least sending a message or exploring the server beyond the first few channels.
+New members who don't activate tend to remain inactive, so try to improve this. How can you make it easier for new members to onboard into your community?
+
+tip:If the chart looks crazy, you may not have enough new members joining daily. Try changing the interval to Weekly or Monthly.

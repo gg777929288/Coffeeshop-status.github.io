@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Shop 文字頻道統計</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        .chart-container {
+            min-height: 100px;
+            height: 500px;
+            width: 100%;
+        }
+        .description {
+            margin: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .table-container {
+            margin: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pagination {
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .date-filter {
+            display: none;
+        }
+        .zoom-instructions {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="description">
+            <h2>語音頻道使用統計</h2>
+            <p>統計包含：頻道人數、通話人數</p>
+            <p style="color: #666; font-style: italic;">註：以下圖表數據為28天內的統計資料。</p>
+        </div>
+
+        <div class="zoom-instructions">
+            <p>📱 手機使用者：使用雙指縮放來調整圖表大小</p>
+            <p>💻 電腦使用者：使用滑鼠滾輪縮放，按住 Shift 鍵進行水平縮放</p>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="channelChart"></canvas>
+        </div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>時間</th>
+                        <th>頻道名稱</th>
+                        <th>頻道ID</th>
+                        <th>頻道人數</th>
+                        <th>通話人數</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const ITEMS_PER_PAGE = 10;
+        let chart = null;
+
+        const channelData = [
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "正在耍廢",
+                id: "1137218241622704250",
+                listeners: 0,
+                communicators: 0
+            },
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "點我新增語音頻道",
+                id: "1283291137809059903",
+                listeners: 0,
+                communicators: 1
+            },
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "普通語音頻道",
+                id: "1283293086956392512",
+                listeners: 51,
+                communicators: 42
+            },
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "掛機頻道",
+                id: "1283294002178953246",
+                listeners: 0,
+                communicators: 0
+            },
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "test",
+                id: "1313170094310031520",
+                listeners: 0,
+                communicators: 1
+            },
+            {
+                timestamp: "2024-12-02T00:00:00+00:00",
+                name: "furiren_.的小天地",
+                id: "1313423683892674661",
+                listeners: 0,
+                communicators: 0
+            }
+        ];
+
+        function createChart(data) {
+            const ctx = document.getElementById('channelChart').getContext('2d');
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.name),
+                    datasets: [{
+                        label: '頻道人數',
+                        data: data.map(d => d.listeners),
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                    }, {
+                        label: '通話人數',
+                        data: data.map(d => d.communicators),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'ctrl'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '語音頻道使用統計',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageData = data.slice(startIndex, endIndex);
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            pageData.forEach(item => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = item.timestamp;
+                row.insertCell(1).textContent = item.name;
+                row.insertCell(2).textContent = item.id;
+                row.insertCell(3).textContent = item.listeners;
+                row.insertCell(4).textContent = item.communicators;
+            });
+
+            updatePagination(data.length);
+        }
+
+        function updatePagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Add previous page button
+            if (currentPage > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.textContent = '←';
+                prevButton.addEventListener('click', () => {
+                    currentPage--;
+                    loadData();
+                });
+                pagination.appendChild(prevButton);
+            }
+
+            // Add page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    loadData();
+                });
+                if (i === currentPage) {
+                    button.style.backgroundColor = '#007bff';
+                    button.style.color = 'white';
+                }
+                pagination.appendChild(button);
+            }
+
+            // Add next page button
+            if (currentPage < totalPages) {
+                const nextButton = document.createElement('button');
+                nextButton.textContent = '→';
+                nextButton.addEventListener('click', () => {
+                    currentPage++;
+                    loadData();
+                });
+                pagination.appendChild(nextButton);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            createChart(channelData);
+            updateTable(channelData);
+        });
+    </script>
+</body>
+</html>

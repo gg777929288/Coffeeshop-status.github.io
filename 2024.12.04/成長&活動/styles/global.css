@@ -1,0 +1,38 @@
+/* ...existing global styles... */
+
+/* 歡迎文字的淡入淡出效果 */
+.welcome-text {
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 2em;
+    text-align: center;
+}
+
+/* 導航菜單和內容框的初始透明度設為0 */
+.nav-menu {
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.content-frame {
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+/* 更��� body 的背景顏色過渡效果 */
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    background-color: #000; /* 初始設為黑色 */
+    transition: background-color 1s ease-in-out;
+}
+
+/* ...existing global styles... */
+
+/* ...existing global styles... */

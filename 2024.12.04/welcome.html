@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歡迎頁面</title>
+    <style>
+        :root {
+            --background-color: #f5f5f5;
+            --highlight-color: #4a90e2;
+            --notice-bg: #fff3cd;
+            --container-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        /* 確保頁面立即可見 */
+        body {
+            opacity: 1;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+        }
+
+        .welcome-text {
+            font-size: 2em;
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 1s ease-in-out, transform 0.5s ease;
+        }
+
+        .welcome-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .welcome-container {
+            padding: 40px;
+            max-width: 800px;
+            margin: 20px;
+            background-color: var(--container-bg);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(30px);
+            opacity: 0;
+            transition: transform 0.8s ease, opacity 0.8s ease;
+        }
+
+        body.show .welcome-container {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .notice {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        ul {
+            list-style-type: decimal;
+            padding-left: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .welcome-container {
+                margin: 10px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+
+        .welcome-container {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .welcome-container.show {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            color: #34495e;
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .highlight {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .message-part {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.8s ease forwards;
+            margin: 15px 0;
+        }
+
+        .message-part:nth-child(2) { animation-delay: 0.3s; }
+        .message-part:nth-child(3) { animation-delay: 0.6s; }
+        .message-part:nth-child(4) { animation-delay: 0.9s; }
+
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .links {
+            margin-top: 25px;
+        }
+
+        .links a {
+            display: inline-block;
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 8px 15px;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .links a:hover {
+            background-color: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="message-part">
+            <h1>Hello！各位好！</h1>
+        </div>
+        <div class="message-part">
+            <p>歡迎各位來到咖啡廳的2024年12月伺服器統計報告網站！</p>
+        </div>
+        <div class="message-part">
+            <p>這裡是Discord伺服器「聊天咖啡廳」的伺服器分析專用頁面，若各位想看8~12月份的甚麼資料的話都在這邊！</p>
+        </div>
+        <div class="message-part">
+            <div class="links">
+                <a href="https://www.coffeeshoptw.com/" target="_blank">造訪官網</a>
+                <a href="https://discord.gg/VzdeVzHfxB" target="_blank">加入我們</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 移除等待父窗口信號的代碼
+        document.body.classList.add('show');
+        
+        // 通知父窗口已載入完成
+        window.parent.postMessage('welcomeLoaded', '*');
+
+        // 添加錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('Page error:', e.message);
+        });
+
+        // 確保頁面載入後至少顯示內容
+        setTimeout(function() {
+            if (!document.body.classList.contains('show')) {
+                document.body.classList.add('show');
+            }
+        }, 2000);
+
+        // 等待父窗口完成歡迎文字後再顯示內容
+        window.onload = function() {
+            const container = document.querySelector('.welcome-container');
+            
+            // 延遲顯示內容
+            setTimeout(() => {
+                container.classList.add('show');
+            }, 500);
+        };
+    </script>
+</body>
+</html>

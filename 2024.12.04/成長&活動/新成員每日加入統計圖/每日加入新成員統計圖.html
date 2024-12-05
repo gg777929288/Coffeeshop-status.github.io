@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新成員加入統計</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 添加 zoom 插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            height: 70vh;
+        }
+        @media (max-width: 600px) {
+            .chart-container {
+                height: 80vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="memberJoinsChart"></canvas>
+    </div>
+
+    <script>
+        const data = [
+            { date: "2024-08-06", total: 6 },
+            { date: "2024-08-07", total: 1 },
+            { date: "2024-08-08", total: 4 },
+            { date: "2024-08-09", total: 3 },
+            { date: "2024-08-10", total: 1 },
+            { date: "2024-08-11", total: 4 },
+            { date: "2024-08-12", total: 7 },
+            { date: "2024-08-13", total: 3 },
+            { date: "2024-08-14", total: 1 },
+            { date: "2024-08-15", total: 6 },
+            { date: "2024-08-16", total: 7 },
+            { date: "2024-08-17", total: 3 },
+            { date: "2024-08-18", total: 2 },
+            { date: "2024-08-19", total: 5 },
+            { date: "2024-08-20", total: 1 },
+            { date: "2024-08-21", total: 7 },
+            { date: "2024-08-22", total: 1 },
+            { date: "2024-08-23", total: 33 },
+            { date: "2024-08-24", total: 19 },
+            { date: "2024-08-25", total: 24 },
+            { date: "2024-08-26", total: 9 },
+            { date: "2024-08-27", total: 8 },
+            { date: "2024-08-28", total: 6 },
+            { date: "2024-08-29", total: 8 },
+            { date: "2024-08-30", total: 10 },
+            { date: "2024-08-31", total: 5 },
+            { date: "2024-09-01", total: 9 },
+            { date: "2024-09-02", total: 8 },
+            { date: "2024-09-03", total: 2 },
+            { date: "2024-09-04", total: 3 },
+            { date: "2024-09-05", total: 5 },
+            { date: "2024-09-06", total: 11 },
+            { date: "2024-09-07", total: 12 },
+            { date: "2024-09-08", total: 8 },
+            { date: "2024-09-09", total: 15 },
+            { date: "2024-09-10", total: 29 },
+            { date: "2024-09-11", total: 11 },
+            { date: "2024-09-12", total: 21 },
+            { date: "2024-09-13", total: 5 },
+            { date: "2024-09-14", total: 6 },
+            { date: "2024-09-15", total: 3 },
+            { date: "2024-09-16", total: 4 },
+            { date: "2024-09-17", total: 3 },
+            { date: "2024-09-18", total: 10 },
+            { date: "2024-09-19", total: 3 },
+            { date: "2024-09-20", total: 8 },
+            { date: "2024-09-21", total: 19 },
+            { date: "2024-09-22", total: 8 },
+            { date: "2024-09-23", total: 9 },
+            { date: "2024-09-24", total: 7 },
+            { date: "2024-09-25", total: 18 },
+            { date: "2024-09-26", total: 4 },
+            { date: "2024-09-27", total: 5 },
+            { date: "2024-09-28", total: 2 },
+            { date: "2024-09-29", total: 3 },
+            { date: "2024-09-30", total: 19 },
+            { date: "2024-10-01", total: 9 },
+            { date: "2024-10-02", total: 78 },
+            { date: "2024-10-03", total: 13 },
+            { date: "2024-10-04", total: 12 },
+            { date: "2024-10-05", total: 4 },
+            { date: "2024-10-06", total: 13 },
+            { date: "2024-10-07", total: 7 },
+            { date: "2024-10-08", total: 3 },
+            { date: "2024-10-09", total: 5 },
+            { date: "2024-10-10", total: 4 },
+            { date: "2024-10-11", total: 4 },
+            { date: "2024-10-12", total: 10 },
+            { date: "2024-10-13", total: 0 },
+            { date: "2024-10-14", total: 5 },
+            { date: "2024-10-15", total: 1 },
+            { date: "2024-10-16", total: 6 },
+            { date: "2024-10-17", total: 1 },
+            { date: "2024-10-18", total: 4 },
+            { date: "2024-10-19", total: 1 },
+            { date: "2024-10-20", total: 4 },
+            { date: "2024-10-21", total: 9 },
+            { date: "2024-10-22", total: 4 },
+            { date: "2024-10-23", total: 5 },
+            { date: "2024-10-24", total: 2 },
+            { date: "2024-10-25", total: 2 },
+            { date: "2024-10-26", total: 1 },
+            { date: "2024-10-27", total: 4 },
+            { date: "2024-10-28", total: 1 },
+            { date: "2024-10-29", total: 1 },
+            { date: "2024-10-30", total: 2 },
+            { date: "2024-10-31", total: 4 },
+            { date: "2024-11-01", total: 4 },
+            { date: "2024-11-02", total: 2 },
+            { date: "2024-11-03", total: 2 },
+            { date: "2024-11-04", total: 1 },
+            { date: "2024-11-05", total: 3 },
+            { date: "2024-11-06", total: 2 },
+            { date: "2024-11-07", total: 0 },
+            { date: "2024-11-08", total: 4 },
+            { date: "2024-11-09", total: 4 },
+            { date: "2024-11-10", total: 0 },
+            { date: "2024-11-11", total: 1 },
+            { date: "2024-11-12", total: 2 },
+            { date: "2024-11-13", total: 1 },
+            { date: "2024-11-14", total: 2 },
+            { date: "2024-11-15", total: 6 },
+            { date: "2024-11-16", total: 8 },
+            { date: "2024-11-17", total: 8 },
+            { date: "2024-11-18", total: 1 },
+            { date: "2024-11-19", total: 4 },
+            { date: "2024-11-20", total: 4 },
+            { date: "2024-11-21", total: 1 },
+            { date: "2024-11-22", total: 4 },
+            { date: "2024-11-23", total: 1 },
+            { date: "2024-11-24", total: 2 },
+            { date: "2024-11-25", total: 2 },
+            { date: "2024-11-26", total: 1 },
+            { date: "2024-11-27", total: 5 },
+            { date: "2024-11-28", total: 2 },
+            { date: "2024-11-29", total: 2 },
+            { date: "2024-11-30", total: 5 },
+            { date: "2024-12-01", total: 3 }
+        ];
+
+        const ctx = document.getElementById('memberJoinsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(item => {
+                    const date = new Date(item.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                }),
+                datasets: [{
+                    label: '每日新成員加入總數',
+                    data: data.map(item => item.total),
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '新成員數量'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '日期'
+                        }
+                    }
+                },
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                            modifierKey: 'ctrl',
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',
+                            drag: {
+                                enabled: true,
+                                backgroundColor: 'rgba(54, 162, 235, 0.3)',
+                                borderColor: 'rgba(54, 162, 235, 0.6)',
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '新成員每日加入統計圖表',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: 20
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

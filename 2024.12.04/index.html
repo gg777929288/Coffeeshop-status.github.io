@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咖啡廳數據中心</title>
+    
+    <style>
+        /* 全域樣式 */
+        :root {
+            --primary-color: #5865F2;
+            --secondary-color: #99AAB5;
+            --background-color: #f5f7fa;
+            --chart-background: #ffffff;
+        }
+        
+        /* 設定 html 和 body 的高度為 100% */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #000; /* 初始設為黑色 */
+            transition: background-color 1s ease-in-out;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 歡迎文字的RPG風格設計 */
+        .welcome-text {
+            opacity: 1; /* 改為1，讓文字一開始就顯示 */
+            transition: opacity 1s ease-in-out, transform 0.5s ease;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            color: white;
+            font-size: 2em;
+            text-align: center;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-text::after {
+            content: "▼";
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+        
+        /* 改進版導航菜單樣式 */
+        .nav-menu {
+            width: 100%;
+            background: #2c3e50;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background 0.3s ease, opacity 1s ease-in-out;
+            height: 60px; /* 設定固定高度 */
+            opacity: 0; /* 初始隱藏 */
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 改進版導航連結樣式 */
+        .nav-links {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+        
+        .nav-links li {
+            position: relative;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .nav-links li.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .nav-links a {
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 10px 20px;
+            display: block;
+            font-weight: 500;
+            transition: background 0.3s ease, color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #ffffff;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a:hover {
+            background: #34495e;
+            color: #ffffff;
+            border-radius: 4px;
+        }
+
+        .nav-links a::before {
+            content: '►';
+            position: absolute;
+            left: -20px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover::before {
+            opacity: 1;
+            left: 5px;
+        }
+        
+        /* 改進版下拉菜單樣式 */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #34495e;
+            top: 100%;
+            left: 0;
+            min-width: 220px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 1000;
+            transform-origin: top;
+            transform: scaleY(0);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            animation: fadeInDown 0.3s ease;
+        }
+        
+        .dropdown-content a {
+            padding: 12px 20px;
+            color: #ecf0f1;
+        }
+        
+        .dropdown-content a:hover {
+            background: #3d566e;
+            color: #ffffff;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+            transform: scaleY(1);
+            opacity: 1;
+        }
+        
+        /* 改進版漢堡包樣式 */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 35px;
+            height: 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .hamburger span {
+            width: 100%;
+            height: 4px;
+            background: #ecf0f1;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* 新增：漢堡包關閉動畫 */
+        .hamburger.closing span:nth-child(1) {
+            transform: rotate(0) translate(0, 0);
+        }
+
+        .hamburger.closing span:nth-child(2) {
+            opacity: 1;
+        }
+
+        .hamburger.closing span:nth-child(3) {
+            transform: rotate(0) translate(0, 0);
+        }
+        
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        
+        /* 響應式設計 */
+        @media screen and (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+        
+            .nav-links {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                height: calc(100% - 60px);
+                background: #2c3e50;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding-top: 20px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+        
+            .nav-links.active {
+                transform: translateX(0);
+            }
+        
+            .nav-links li {
+                width: 100%;
+                text-align: center;
+            }
+        
+            .nav-links a {
+                padding: 15px 0;
+                width: 100%;
+            }
+        
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+                background: #34495e;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease-in-out;
+                display: block; /* 改為 block，讓它可以展開收起 */
+                transform: none; /* 移除變形效果 */
+            }
+        
+            .dropdown.active .dropdown-content {
+                max-height: 500px; /* 調整為合適的高度 */
+                opacity: 1;
+            }
+        
+            /* 移除這個規則，因為我們不想在行動裝置上隱藏下拉內容 */
+            /* .dropdown:hover .dropdown-content {
+                display: none;
+            } */
+        }
+        
+        /* 內容框樣式 */
+        main {
+            flex: 1; /* 讓 main 填滿剩餘空間 */
+            margin-top: 60px; /* 留空導航欄高度 */
+            display: flex;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .content-container {
+            flex: 1;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 40px;
+            overflow-y: auto;
+            max-height: calc(100vh - 100px);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            visibility: hidden; /* 改用 visibility 而不是 display: none */
+            display: none; /* 添加這行 */
+        }
+
+        .content-container.active {
+            display: block; /* 添加這行 */
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Overlay樣式 */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 500;
+        }
+        
+        /* 預設內容容器樣式 */
+        .default-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease-in-out, transform 0.5s ease;
+            padding: 40px;
+            overflow-y: auto; /* 內容超出時可滾動 */
+            max-height: calc(100vh - 100px); /* 視窗高度減去導航欄和padding */
+        }
+
+        .default-content > * {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+
+        .default-content.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .default-content h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .default-content p {
+            color: #34495e;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .default-content .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .default-content .join-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .default-content .join-button:hover {
+            background: #2980b9;
+        }
+
+        /* Add styles for iframe initial state */
+        #contentFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        #contentFrame.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 新增版權標籤樣式 */
+        .copyright-text {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+            text-align: center;
+            z-index: 1001;
+            white-space: nowrap;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        /* 當點擊歡迎文字後，版權文字也要隱藏 */
+        .copyright-text.hide {
+            opacity: 0;
+        }
+
+        /* RPG風格動畫效果 */
+        @keyframes glowing {
+            0% { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6; }
+            50% { box-shadow: 0 0 10px #fff, 0 0 15px #00a6e6, 0 0 20px #00a6e6, 0 0 25px #00a6e6; }
+            100% { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Sound Control Bubble */
+        .sound-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1002;
+            cursor: pointer;
+        }
+
+        .sound-control-icon {
+            width: 40px;
+            height: 40px;
+            background: #2c3e50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-style: italic;
+            font-family: serif;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .sound-control-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .sound-panel {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background: #2c3e50;
+            padding: 15px;
+            border-radius: 8px;
+            width: 250px;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .sound-panel.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sound-option {
+            margin: 10px 0;
+            color: white;
+        }
+
+        .sound-option label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .mute-all-btn {
+            width: 100%;
+            padding: 8px;
+            background: #3498db;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .mute-all-btn:hover {
+            background: #2980b9;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            const welcomeText = document.querySelector('.welcome-text');
+            const contentFrame = document.getElementById('contentFrame');
+            const contentContainer = document.getElementById('content-container');
+            const navMenu = document.querySelector('.nav-menu');
+            const welcomeSound = document.getElementById('welcomeSound');
+            const hamburger = document.getElementById('hamburger');
+            const copyrightText = document.querySelector('.copyright-text');
+            const clickSound = document.getElementById('clickSound');
+            
+            // 設置初始狀態
+            contentContainer.style.display = 'none';
+            contentContainer.style.visibility = 'hidden';
+            navMenu.style.opacity = '0';
+            welcomeText.textContent = "點擊此處開始";
+            welcomeText.classList.add('show'); // 直接顯示歡迎文字
+            
+            // 點擊事件處理
+            welcomeText.addEventListener('click', () => {
+                // 播放點擊音效
+                clickSound.play().catch(function(error) {
+                    console.error("Click sound failed:", error);
+                });
+                
+                // 短暫延遲後開始轉場動畫
+                setTimeout(() => {
+                    welcomeText.classList.remove('show');
+                    welcomeText.style.display = 'none';
+                    copyrightText.classList.add('hide');
+                    
+                    setTimeout(() => {
+                        contentContainer.style.display = 'block'; // 先顯示容器
+                        navMenu.style.opacity = '1';
+                        document.body.style.backgroundColor = 'var(--background-color)';
+                        contentContainer.style.visibility = 'visible';
+                        contentFrame.src = 'welcome.html';
+                        
+                        const navItems = document.querySelectorAll('.nav-links li');
+                        navItems.forEach((item, index) => {
+                            setTimeout(() => {
+                                item.classList.add('show');
+                            }, index * 200);
+                        });
+
+                        setTimeout(() => {
+                            contentContainer.classList.add('active');
+                            contentFrame.classList.add('show');
+                        }, 500);
+                    }, 1000);
+                }, 200); // 等待音效播放一小段時間
+            });
+
+            // 漢堡包選單處理
+            hamburger.addEventListener('click', function() {
+                const navLinks = document.querySelector('.nav-links');
+                
+                if (this.classList.contains('active')) {
+                    this.classList.add('closing');
+                    this.classList.remove('active');
+                    navLinks.classList.remove('active');
+                    
+                    setTimeout(() => {
+                        this.classList.remove('closing');
+                    }, 300);
+                } else {
+                    this.classList.add('active');
+                    navLinks.classList.add('active');
+                }
+            });
+
+            // 處理下拉選單在行動裝置的點擊
+            document.querySelectorAll('.dropbtn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (window.innerWidth <= 768) {
+                        e.preventDefault();
+                        this.parentElement.classList.toggle('active');
+                    }
+                });
+            });
+
+            // 點擊外部關閉選單
+            document.addEventListener('click', function(e) {
+                const navLinks = document.querySelector('.nav-links');
+                
+                if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+                    navLinks.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    document.querySelectorAll('.dropdown').forEach(dropdown => {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+
+            // 處理 iframe 載入
+            contentFrame.addEventListener('load', function() {
+                this.classList.add('show');
+            });
+
+            // 為所有導航鏈接添加點擊事件處理
+            document.querySelectorAll('.nav-links a:not(.dropbtn)').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('target') === 'content') {
+                        e.preventDefault();
+                        const url = this.getAttribute('href');
+                        loadContent(url);
+                    }
+                    
+                    if (window.innerWidth <= 768) {
+                        hamburger.classList.add('closing');
+                        hamburger.classList.remove('active');
+                        document.querySelector('.nav-links').classList.remove('active');
+                        
+                        setTimeout(() => {
+                            hamburger.classList.remove('closing');
+                        }, 300);
+
+                        document.querySelectorAll('.dropdown').forEach(dropdown => {
+                            dropdown.classList.remove('active');
+                        });
+                    }
+                });
+            });
+
+            // 增強iframe切換動畫
+            function loadContent(url) {
+                const frame = document.getElementById('contentFrame');
+                frame.classList.remove('show');
+                
+                setTimeout(() => {
+                    frame.src = url;
+                    frame.onload = () => {
+                        frame.classList.add('show');
+                        // 播放RPG風格的切換音效
+                        const pageChangeSound = new Audio('sound/page-change.mp3');
+                        pageChangeSound.volume = 0.3;
+                        pageChangeSound.play().catch(err => console.log('Audio play failed:', err));
+                    };
+                }, 500);
+            }
+
+            // 為所有導航連結添加動畫效果
+            document.querySelectorAll('.nav-links a:not(.dropbtn)').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('target') === 'content') {
+                        e.preventDefault();
+                        const url = this.getAttribute('href');
+                        loadContent(url);
+                    }
+                    
+                    // ...existing code...
+                });
+            });
+
+            // 添加鼠標懸停效果
+            const navLinks = document.querySelectorAll('.nav-links a');
+            navLinks.forEach(link => {
+                link.addEventListener('mouseenter', () => {
+                    const hoverSound = new Audio('sound/hover.mp3');
+                    hoverSound.volume = 0.1;
+                    hoverSound.play().catch(err => console.log('Audio play failed:', err));
+                });
+            });
+
+            const backgroundMusic = document.getElementById('backgroundMusic');
+            const soundControl = document.querySelector('.sound-control-icon');
+            const soundPanel = document.querySelector('.sound-panel');
+            const bgMusicToggle = document.getElementById('bgMusicToggle');
+            const pageChangeToggle = document.getElementById('pageChangeToggle');
+            const startSoundToggle = document.getElementById('startSoundToggle');
+            const muteAllBtn = document.getElementById('muteAllBtn');
+            
+            // 音效控制面板顯示/隱藏
+            soundControl.addEventListener('click', () => {
+                soundPanel.classList.toggle('show');
+            });
+
+            // 點擊面板外關閉面板
+            document.addEventListener('click', (e) => {
+                if (!soundControl.contains(e.target) && !soundPanel.contains(e.target)) {
+                    soundPanel.classList.remove('show');
+                }
+            });
+
+            // 背景音樂控制
+            bgMusicToggle.addEventListener('change', () => {
+                if (bgMusicToggle.checked) {
+                    backgroundMusic.volume = 0.3;
+                    backgroundMusic.muted = false;
+                } else {
+                    backgroundMusic.muted = true;
+                }
+            });
+
+            // 在歡迎文字點擊事件中修改
+            welcomeText.addEventListener('click', () => {
+                clickSound.play().then(() => {
+                    // 等待click.mp3播放完畢後播放背景音樂
+                    setTimeout(() => {
+                        backgroundMusic.volume = 0.3;
+                        backgroundMusic.play().catch(console.error);
+                    }, 1000); // 假設click.mp3長度約1秒
+                }).catch(console.error);
+                
+                // ...existing welcome text click handler code...
+            });
+
+            // 一鍵全部靜音
+            muteAllBtn.addEventListener('click', () => {
+                const isMuted = !backgroundMusic.muted;
+                backgroundMusic.muted = isMuted;
+                bgMusicToggle.checked = !isMuted;
+                pageChangeToggle.checked = !isMuted;
+                startSoundToggle.checked = !isMuted;
+            });
+
+            // 修改現有的loadContent函數
+            function loadContent(url) {
+                const frame = document.getElementById('contentFrame');
+                frame.classList.remove('show');
+                
+                setTimeout(() => {
+                    frame.src = url;
+                    frame.onload = () => {
+                        frame.classList.add('show');
+                        // 檢查頁面切換音效是否開啟
+                        if (pageChangeToggle.checked) {
+                            const pageChangeSound = new Audio('sound/page-change.mp3');
+                            pageChangeSound.volume = 0.3;
+                            pageChangeSound.play().catch(console.error);
+                        }
+                    };
+                }, 500);
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="welcome-text"></div>
+    <div class="copyright-text">【☕聊天の咖啡廳☕】管理組 版權所有</div>
+    <header>
+        <nav class="nav-menu">
+            <!-- 改進版漢堡包按鈕 -->
+            <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <!-- 改進版導航連結 -->
+            <ul class="nav-links" id="nav-links">
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">2024/12月報告</a>
+                    <ul class="dropdown-content">
+                        <li><a href="成長&活動/總人數/Discord咖啡廳總人數.html" target="content">Discord咖啡廳總人數</a></li>
+                        <li><a href="成長&活動/新成員每日加入統計圖/每日加入新成員統計圖.html" target="content">每日加入新成員統計圖</a></li>
+                        <li><a href="成長&活動/最受歡迎的連結/最受歡迎的邀請連結.html" target="content">最受歡迎的邀請連結</a></li>
+                        <li><a href="成長&活動/Server leaves over time(自己離開的成員，不包含被管理員踢除、不包含被discord官方封鎖)/伺服器離開成員統計.html" target="content">伺服器離開成員統計</a></li>
+                        <li><a href="成長&活動/retain the nextweek/新會員下週留存分析.html" target="content">新會員下週留存分析</a></li>
+                        <li><a href="成長&活動/New member joining/新成員加入趨勢.html" target="content">新成員加入趨勢</a></li>
+                        <li><a href="成長&活動/How many new members successfully activate on their first day/新成員啟用分析.html" target="content">新成員啟用分析</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Engagement</a>
+                    <ul class="dropdown-content">
+                        <li><a href="Engagement/文字活動/文字活動.html" target="content">文字活動</a></li>
+                        <li><a href="Engagement/How many members visited and communicated/多少人參訪並交流.html" target="content">多少人參訪並交流</a></li>
+                        <li><a href="Engagement/多少人靜音了我的伺服器/靜音.html" target="content">多少人靜音了伺服器</a></li>
+                        <li><a href="Engagement/最多人用的文字頻道是甚麼/文字頻道.html" target="content">熱門文字頻道</a></li>
+                        <li><a href="Engagement/最多人用的語音頻道是甚麼/語音頻道.html" target="content">熱門語音頻道</a></li>
+                        <li><a href="Engagement/語音活動/語音活動.html" target="content">語音活動</a></li>
+                    </ul>
+                </li>
+                <li><a href="公告/公告分析.html" target="content">公告分析</a></li>
+                <li><a href="使用者/使用者分析.html" target="content">使用者分析</a></li>
+                <li><a href="https://www.coffeeshoptw.com/" target="_blank" rel="noopener">官網連結</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <!-- Overlay for background hiding -->
+    <div class="overlay" id="overlay"></div>
+    
+    <main>
+        <div id="content-container" class="content-container active">
+            <iframe 
+                name="content" 
+                id="contentFrame" 
+                style="width: 100%; height: 100%; border: none;"
+                src="welcome.html">
+            </iframe>
+        </div>
+    </main>
+    <audio id="welcomeSound" preload="auto">
+        <source src="sound" type="audio/mpeg">
+        <source src="sound.mp3" type="audio/mpeg">
+        <source src="sound.wav" type="audio/wav">
+    </audio>
+    <audio id="clickSound" preload="auto">
+        <source src="sound/click.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="backgroundMusic" loop>
+        <source src="sound/background.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- Add sound control UI -->
+    <div class="sound-control">
+        <div class="sound-control-icon">i</div>
+        <div class="sound-panel">
+            <div class="sound-option">
+                <label>
+                    背景音樂
+                    <input type="checkbox" id="bgMusicToggle" checked>
+                </label>
+            </div>
+            <div class="sound-option">
+                <label>
+                    頁面切換音效
+                    <input type="checkbox" id="pageChangeToggle" checked>
+                </label>
+            </div>
+            <div class="sound-option">
+                <label>
+                    開始音效
+                    <input type="checkbox" id="startSoundToggle" checked>
+                </label>
+            </div>
+            <button class="mute-all-btn" id="muteAllBtn">一鍵全部靜音</button>
+        </div>
+    </div>
+</body>
+</html>

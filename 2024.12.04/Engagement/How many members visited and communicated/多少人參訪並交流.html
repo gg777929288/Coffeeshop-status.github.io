@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Shop 訪客互動統計</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        .chart-container {
+            min-height: 100px;
+            height: 500px;
+            width: 100%;
+        }
+        .description {
+            margin: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .prune-info {
+            display: block;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+        .prune-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .prune-stat {
+            margin: 10px 0;
+        }
+        .prune-number {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .zoom-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .reset-zoom {
+            padding: 8px 15px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .reset-zoom:hover {
+            background-color: #5a6268;
+        }
+        .info-icon {
+            display: none; /* Hidden by default, shown only on mobile */
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .info-icon {
+                display: block;
+            }
+            .prune-info {
+                display: none;
+                bottom: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="description">
+            <h2>多少人參訪本群並交流？</h2>
+            <p>訪客定義：點擊進入伺服器並至少瀏覽過1個頻道的成員。</p>
+            <p>互動者定義：發送至少3則訊息及/或在語音頻道中發言的訪客。</p>
+        </div>
+        <div class="chart-container">
+            <canvas id="visitChart"></canvas>
+        </div>
+        <div class="zoom-controls">
+            <button class="reset-zoom" onclick="resetZoom()">重設縮放</button>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <h3>平均每日訪客</h3>
+                <div id="avgVisitors" class="stat-value">0</div>
+            </div>
+            <div class="stat-box">
+                <h3>平均互動比例</h3>
+                <div id="avgCommunication" class="stat-value">0%</div>
+            </div>
+            <div class="stat-box">
+                <h3>最高訪客數</h3>
+                <div id="maxVisitors" class="stat-value">0</div>
+            </div>
+            <div class="stat-box">
+                <h3>最高互動比例</h3>
+                <div id="maxCommunication" class="stat-value">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-icon" onclick="togglePruneInfo()">i</div>
+    <div class="prune-info">
+        <h3>可清除多少閒置用戶？</h3>
+        <div class="prune-stat">
+            - 閒置 7 天：<span class="prune-number">1,045</span> 人
+        </div>
+        <div class="prune-stat">
+            - 閒置 30 天：<span class="prune-number">837</span> 人
+        </div>
+    </div>
+
+    <script>
+        const fullData = [
+            ["2024-08-06T00:00:00+00:00", 131, 8.396946564885496],
+            ["2024-08-07T00:00:00+00:00", 285, 5.964912280701754],
+            ["2024-08-08T00:00:00+00:00", 143, 6.993006993006993],
+            ["2024-08-09T00:00:00+00:00", 161, 8.074534161490684],
+            ["2024-08-10T00:00:00+00:00", 133, 6.015037593984962],
+            ["2024-08-11T00:00:00+00:00", 132, 9.848484848484848],
+            ["2024-08-12T00:00:00+00:00", 137, 11.678832116788321],
+            ["2024-08-13T00:00:00+00:00", 129, 10.077519379844961],
+            ["2024-08-14T00:00:00+00:00", 140, 6.428571428571428],
+            ["2024-08-15T00:00:00+00:00", 286, 8.741258741258742],
+            ["2024-08-16T00:00:00+00:00", 152, 10.526315789473683],
+            ["2024-08-17T00:00:00+00:00", 155, 8.38709677419355],
+            ["2024-08-18T00:00:00+00:00", 133, 6.7669172932330826],
+            ["2024-08-19T00:00:00+00:00", 137, 13.138686131386862],
+            ["2024-08-20T00:00:00+00:00", 116, 7.758620689655173],
+            ["2024-08-21T00:00:00+00:00", 122, 8.19672131147541],
+            ["2024-08-22T00:00:00+00:00", 97, 8.24742268041237],
+            ["2024-08-23T00:00:00+00:00", 184, 9.782608695652174],
+            ["2024-08-24T00:00:00+00:00", 219, 6.392694063926941],
+            ["2024-08-25T00:00:00+00:00", 196, 11.224489795918368],
+            ["2024-08-26T00:00:00+00:00", 278, 6.115107913669065],
+            ["2024-08-27T00:00:00+00:00", 197, 5.583756345177665],
+            ["2024-08-28T00:00:00+00:00", 193, 10.362694300518134],
+            ["2024-08-29T00:00:00+00:00", 175, 12],
+            ["2024-08-30T00:00:00+00:00", 193, 11.917098445595855],
+            ["2024-08-31T00:00:00+00:00", 191, 9.947643979057592],
+            ["2024-09-01T00:00:00+00:00", 209, 9.569377990430622],
+            ["2024-09-02T00:00:00+00:00", 197, 9.137055837563452],
+            ["2024-09-03T00:00:00+00:00", 183, 8.19672131147541],
+            ["2024-09-04T00:00:00+00:00", 195, 7.6923076923076925],
+            ["2024-09-05T00:00:00+00:00", 219, 7.76255707762557],
+            ["2024-09-06T00:00:00+00:00", 303, 8.58085808580858],
+            ["2024-09-07T00:00:00+00:00", 294, 7.142857142857142],
+            ["2024-09-08T00:00:00+00:00", 250, 10.4],
+            ["2024-09-09T00:00:00+00:00", 316, 9.81012658227848],
+            ["2024-09-10T00:00:00+00:00", 285, 12.982456140350877],
+            ["2024-09-11T00:00:00+00:00", 252, 11.11111111111111],
+            ["2024-09-12T00:00:00+00:00", 327, 11.314984709480122],
+            ["2024-09-13T00:00:00+00:00", 241, 11.20331950207469],
+            ["2024-09-14T00:00:00+00:00", 180, 15.555555555555555],
+            ["2024-09-15T00:00:00+00:00", 304, 11.513157894736842],
+            ["2024-09-16T00:00:00+00:00", 290, 5.862068965517241],
+            ["2024-09-17T00:00:00+00:00", 227, 8.81057268722467],
+            ["2024-09-18T00:00:00+00:00", 245, 13.877551020408163],
+            ["2024-09-19T00:00:00+00:00", 287, 10.452961672473867],
+            ["2024-09-20T00:00:00+00:00", 306, 11.11111111111111],
+            ["2024-09-21T00:00:00+00:00", 268, 13.432835820895523],
+            ["2024-09-22T00:00:00+00:00", 300, 12],
+            ["2024-09-23T00:00:00+00:00", 280, 10.714285714285714],
+            ["2024-09-24T00:00:00+00:00", 278, 15.827338129496402],
+            ["2024-09-25T00:00:00+00:00", 320, 15],
+            ["2024-09-26T00:00:00+00:00", 334, 11.676646706586826],
+            ["2024-09-27T00:00:00+00:00", 338, 7.6923076923076925],
+            ["2024-09-28T00:00:00+00:00", 247, 8.502024291497975],
+            ["2024-09-29T00:00:00+00:00", 261, 13.026819923371647],
+            ["2024-09-30T00:00:00+00:00", 379, 11.345646437994723],
+            ["2024-10-01T00:00:00+00:00", 303, 8.25082508250825],
+            ["2024-10-02T00:00:00+00:00", 465, 13.978494623655912],
+            ["2024-10-03T00:00:00+00:00", 298, 7.046979865771812],
+            ["2024-10-04T00:00:00+00:00", 267, 12.734082397003746],
+            ["2024-10-05T00:00:00+00:00", 260, 13.076923076923078],
+            ["2024-10-06T00:00:00+00:00", 286, 6.993006993006993],
+            ["2024-10-07T00:00:00+00:00", 250, 9.2],
+            ["2024-10-08T00:00:00+00:00", 226, 11.946902654867257],
+            ["2024-10-09T00:00:00+00:00", 260, 9.230769230769232],
+            ["2024-10-10T00:00:00+00:00", 246, 9.75609756097561],
+            ["2024-10-11T00:00:00+00:00", 232, 10.775862068965516],
+            ["2024-10-12T00:00:00+00:00", 209, 11.004784688995215],
+            ["2024-10-13T00:00:00+00:00", 198, 9.595959595959595],
+            ["2024-10-14T00:00:00+00:00", 275, 9.454545454545455],
+            ["2024-10-15T00:00:00+00:00", 248, 8.870967741935484],
+            ["2024-10-16T00:00:00+00:00", 290, 8.96551724137931],
+            ["2024-10-17T00:00:00+00:00", 245, 9.387755102040817],
+            ["2024-10-18T00:00:00+00:00", 220, 9.545454545454547],
+            ["2024-10-19T00:00:00+00:00", 190, 11.052631578947368],
+            ["2024-10-20T00:00:00+00:00", 190, 10],
+            ["2024-10-21T00:00:00+00:00", 202, 6.9306930693069315],
+            ["2024-10-22T00:00:00+00:00", 247, 11.740890688259109],
+            ["2024-10-23T00:00:00+00:00", 371, 6.199460916442049],
+            ["2024-10-24T00:00:00+00:00", 238, 7.9831932773109235],
+            ["2024-10-25T00:00:00+00:00", 185, 7.027027027027027],
+            ["2024-10-26T00:00:00+00:00", 218, 5.5045871559633035],
+            ["2024-10-27T00:00:00+00:00", 179, 5.58659217877095],
+            ["2024-10-28T00:00:00+00:00", 180, 8.88888888888889],
+            ["2024-10-29T00:00:00+00:00", 250, 8.4],
+            ["2024-10-30T00:00:00+00:00", 256, 6.25],
+            ["2024-10-31T00:00:00+00:00", 181, 7.734806629834254],
+            ["2024-11-01T00:00:00+00:00", 180, 6.111111111111111],
+            ["2024-11-02T00:00:00+00:00", 180, 10],
+            ["2024-11-03T00:00:00+00:00", 169, 4.733727810650888],
+            ["2024-11-04T00:00:00+00:00", 234, 9.82905982905983],
+            ["2024-11-05T00:00:00+00:00", 194, 10.309278350515463],
+            ["2024-11-06T00:00:00+00:00", 171, 11.695906432748536],
+            ["2024-11-07T00:00:00+00:00", 133, 6.015037593984962],
+            ["2024-11-08T00:00:00+00:00", 146, 4.794520547945205],
+            ["2024-11-09T00:00:00+00:00", 148, 5.405405405405405],
+            ["2024-11-10T00:00:00+00:00", 139, 6.474820143884892],
+            ["2024-11-11T00:00:00+00:00", 208, 7.6923076923076925],
+            ["2024-11-12T00:00:00+00:00", 167, 9.580838323353294],
+            ["2024-11-13T00:00:00+00:00", 180, 7.222222222222221],
+            ["2024-11-14T00:00:00+00:00", 180, 5],
+            ["2024-11-15T00:00:00+00:00", 335, 5.3731343283582085],
+            ["2024-11-16T00:00:00+00:00", 253, 5.928853754940711],
+            ["2024-11-17T00:00:00+00:00", 175, 8],
+            ["2024-11-18T00:00:00+00:00", 301, 5.647840531561462],
+            ["2024-11-19T00:00:00+00:00", 225, 1.7777777777777777],
+            ["2024-11-20T00:00:00+00:00", 153, 7.8431372549019605],
+            ["2024-11-21T00:00:00+00:00", 175, 7.428571428571429],
+            ["2024-11-22T00:00:00+00:00", 153, 7.18954248366013],
+            ["2024-11-23T00:00:00+00:00", 133, 2.2556390977443606],
+            ["2024-11-24T00:00:00+00:00", 312, 7.051282051282051],
+            ["2024-11-25T00:00:00+00:00", 250, 11.200000000000001],
+            ["2024-11-26T00:00:00+00:00", 174, 10.919540229885058],
+            ["2024-11-27T00:00:00+00:00", 295, 8.813559322033898],
+            ["2024-11-28T00:00:00+00:00", 201, 8.955223880597014],
+            ["2024-11-29T00:00:00+00:00", 192, 7.8125]
+        ];
+
+        let chartInstance;
+
+        function resetZoom() {
+            if (chartInstance) {
+                chartInstance.resetZoom();
+            }
+        }
+
+        function initChart() {
+            try {
+                const data = fullData.map(row => ({
+                    date: new Date(row[0]),
+                    visitors: parseInt(row[1]),
+                    communicationPct: parseFloat(row[2])
+                }));
+
+                const stats = calculateStats(data);
+                updateStats(stats);
+                createChart(data);
+            } catch (error) {
+                console.error('Error:', error);
+                document.querySelector('.chart-container').innerHTML = 
+                    `<p style="color: red;">Error loading chart: ${error.message}</p>`;
+            }
+        }
+
+        function calculateStats(data) {
+            return {
+                avgVisitors: Math.round(data.reduce((sum, d) => sum + d.visitors, 0) / data.length),
+                avgCommunication: (data.reduce((sum, d) => sum + d.communicationPct, 0) / data.length).toFixed(2),
+                maxVisitors: Math.max(...data.map(d => d.visitors)),
+                maxCommunication: Math.max(...data.map(d => d.communicationPct)).toFixed(2)
+            };
+        }
+
+        function updateStats(stats) {
+            document.getElementById('avgVisitors').textContent = stats.avgVisitors;
+            document.getElementById('avgCommunication').textContent = stats.avgCommunication + '%';
+            document.getElementById('maxVisitors').textContent = stats.maxVisitors;
+            document.getElementById('maxCommunication').textContent = stats.maxCommunication + '%';
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('visitChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => {
+                        const date = d.date;
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }),
+                    datasets: [
+                        {
+                            label: '訪客數',
+                            data: data.map(d => d.visitors),
+                            borderColor: 'rgb(75, 192, 192)',
+                            yAxisID: 'y',
+                            tension: 0.1
+                        },
+                        {
+                            label: '互動比例 (%)',
+                            data: data.map(d => d.communicationPct),
+                            borderColor: 'rgb(255, 99, 132)',
+                            yAxisID: 'y1',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '訪客數',
+                                font: { size: 14 }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '互動比例 (%)',
+                                font: { size: 14 }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期 (8/6-11/29)',
+                                font: { size: 14 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            }
+                        },
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Coffee Shop 訪客互動趨勢分析 (2024/8/6-11/29)',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function togglePruneInfo() {
+            const pruneInfo = document.querySelector('.prune-info');
+            pruneInfo.style.display = pruneInfo.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Hide prune info when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            if (window.innerWidth <= 768) {
+                const pruneInfo = document.querySelector('.prune-info');
+                const infoIcon = document.querySelector('.info-icon');
+                if (!pruneInfo.contains(event.target) && event.target !== infoIcon) {
+                    pruneInfo.style.display = 'none';
+                }
+            }
+        });
+
+        window.addEventListener('load', initChart);
+    </script>
+</body>
+</html>

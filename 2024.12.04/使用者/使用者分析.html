@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Shop 使用者統計</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .chart-wrapper {
+            position: relative;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .chart-container {
+            height: 400px;
+            width: 100%;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ffeeba;
+        }
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info-section">
+            <h1>受眾分析</h1>
+            <p>所有數據均基於過去28天內造訪伺服器的成員。</p>
+            <p>選擇退出分析追蹤的使用者將不會出現在數據中。</p>
+        </div>
+
+        <div class="warning">
+            <p>為保護使用者隱私，除非特定群組的成員超過50人，否則不會顯示為獨立結果，可能會被歸類為「其他」。</p>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <h2>使用者地區分布</h2>
+                <div class="chart-container">
+                    <canvas id="countryChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>使用平台分布</h2>
+                <div class="chart-container">
+                    <canvas id="platformChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>伺服器使用時長分布</h2>
+                <div class="chart-container">
+                    <canvas id="guildTenureChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>新成員 Discord 使用時長分布</h2>
+                <div class="chart-container">
+                    <canvas id="discordTenureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const countryData = {
+            labels: ['其他', '台灣'],
+            data: [119, 779]
+        };
+
+        const platformData = {
+            labels: ['僅桌面版', '桌面版或手機版', '僅手機版', '其他'],
+            data: [180, 877, 443, 0]
+        };
+
+        const guildTenureData = {
+            labels: ['1-6個月', '1年以上', '6個月-1年', '少於1個月'],
+            data: [426, 291, 124, 94]
+        };
+
+        const discordTenureData = {
+            labels: ['1個月以上', '少於1天', '少於1個月'],
+            data: [109, 1, 7]
+        };
+
+        function createPieChart(ctx, data, title) {
+            const chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: title,
+                            font: { size: 16 }
+                        }
+                    }
+                }
+            });
+            
+            return chart;
+        }
+
+        window.addEventListener('load', () => {
+            createPieChart(
+                document.getElementById('countryChart').getContext('2d'),
+                countryData,
+                '使用者地區分布'
+            );
+            createPieChart(
+                document.getElementById('platformChart').getContext('2d'),
+                platformData,
+                '使用平台分布'
+            );
+            createPieChart(
+                document.getElementById('guildTenureChart').getContext('2d'),
+                guildTenureData,
+                '伺服器使用時長分布'
+            );
+            createPieChart(
+                document.getElementById('discordTenureChart').getContext('2d'),
+                discordTenureData,
+                '新成員 Discord 使用時長分布'
+            );
+        });
+    </script>
+</body>
+</html>
